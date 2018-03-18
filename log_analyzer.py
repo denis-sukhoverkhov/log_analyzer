@@ -184,35 +184,39 @@ def calculate_report(path_to_log_file, size=1000, error_threshold_perc=51):
 
 
 def main(config: dict, args):
-    loaded_config = load_config(args.config)
-    merged_config = {**config, **loaded_config}
+    try:
+        loaded_config = load_config(args.config)
+        merged_config = {**config, **loaded_config}
 
-    logging.basicConfig(filename=merged_config['TS_DIR'] if 'TS_DIR' in merged_config else None,
-                        level=logging.INFO,
-                        format='[%(asctime)s] %(levelname).1s %(message)s',
-                        datefmt='%Y.%m.%d %H:%M:%S')
-    logging.info("Program started")
+        logging.basicConfig(filename=merged_config['TS_DIR'] if 'TS_DIR' in merged_config else None,
+                            level=logging.INFO,
+                            format='[%(asctime)s] %(levelname).1s %(message)s',
+                            datefmt='%Y.%m.%d %H:%M:%S')
+        logging.info("Program started")
 
-    path_to_log_dir = os.path.abspath(merged_config['LOG_DIR'])
-    path_to_report_dir = os.path.abspath(merged_config['REPORT_DIR'])
-    log_file = get_last_log_file(path_to_log_dir)
-    log_name = os.path.basename(log_file)
-    date_from_log_name = extract_date_frome_file_name(log_name)
-    report_name = f"report-{date_from_log_name:%Y-%m-%d}.html"
+        path_to_log_dir = os.path.abspath(merged_config['LOG_DIR'])
+        path_to_report_dir = os.path.abspath(merged_config['REPORT_DIR'])
+        log_file = get_last_log_file(path_to_log_dir)
+        log_name = os.path.basename(log_file)
+        date_from_log_name = extract_date_frome_file_name(log_name)
+        report_name = f"report-{date_from_log_name:%Y-%m-%d}.html"
 
-    path_to_new_report_file = os.path.join(path_to_report_dir, report_name)
-    if os.path.exists(path_to_new_report_file):
-        message = f"The newest report has already been generated: {path_to_new_report_file}"
-        logging.info(message)
-        sys.exit(message)
+        path_to_new_report_file = os.path.join(path_to_report_dir, report_name)
+        if os.path.exists(path_to_new_report_file):
+            message = f"The newest report has already been generated: {path_to_new_report_file}"
+            logging.info(message)
+            sys.exit(message)
 
-    # counting values for report
-    table = calculate_report(log_file, size=merged_config['REPORT_SIZE'])
+        # counting values for report
+        table = calculate_report(log_file, size=merged_config['REPORT_SIZE'])
 
-    # rendering html template
-    render(json.dumps(table), report_name, path_to_report_dir)
+        # rendering html template
+        render(json.dumps(table), report_name, path_to_report_dir)
 
-    logging.info("Done!")
+    except BaseException as e:
+        logging.exception(e)
+    finally:
+        logging.info("Done!")
 
 
 if __name__ == "__main__":

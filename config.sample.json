@@ -1,0 +1,6 @@
+{
+  "REPORT_SIZE": 1000,
+  "REPORT_DIR": "./reports",
+  "LOG_DIR": "./log",
+  "TS_DIR": "/var/tmp/log_nalyzer.ts"
+}

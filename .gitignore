@@ -1,0 +1,7 @@
+log
+*temp
+config.json
+reports
+log_nalyzer.ts
+.idea
+__pycache__

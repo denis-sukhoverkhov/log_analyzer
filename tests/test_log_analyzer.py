@@ -6,8 +6,8 @@ import shutil
 import unittest
 
 import os
-from log_analyzer import load_config, get_last_log_file, render, calculate_report, openfile, \
-    extract_date_frome_file_name, create_parser
+from log_analyzer import load_config, get_last_log_file, render, calculate_metrics, openfile, \
+    extract_date_frome_file_name, create_parser, parse_report
 
 logging.disable(logging.CRITICAL)
 
@@ -213,14 +213,16 @@ class TestLogAnalyzer(unittest.TestCase):
 
     def test_calculate_report_if_repot_size_default(self):
         path_to_file = self._generate_plain_sample("nginx-access-ui.log-20170630")
-        table = calculate_report(path_to_file)
+        table_dict = parse_report(path_to_file)
+        table = calculate_metrics(table_dict)
         self.assertIsInstance(table, list)
         self.assertTrue(len(table) > 0)
 
     def test_calculate_report_if_repot_size_equal_ten(self):
         path_to_file = self._generate_plain_sample("nginx-access-ui.log-20170630")
         report_size = 10
-        table = calculate_report(path_to_file, size=report_size)
+        table_dict = parse_report(path_to_file)
+        table = calculate_metrics(table_dict, size=report_size)
         self.assertTrue(len(table) == report_size)
 
     def test_extract_date_frome_normal_file_name(self):

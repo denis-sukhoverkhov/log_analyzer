@@ -15,7 +15,7 @@ import os
 import re
 import sys
 from bisect import insort, bisect_left
-from collections import deque
+from collections import deque, defaultdict
 from itertools import islice
 from string import Template
 
@@ -120,8 +120,8 @@ def openfile(filename, mode='r'):
         return open(filename, mode)
 
 
-def calculate_report(path_to_log_file, size=1000, error_threshold_perc=51):
-    table = dict()
+def parse_report(path_to_log_file, error_threshold_perc=51):
+    table = defaultdict(list)
 
     with openfile(path_to_log_file) as f_out:
         own_num_rows = 0  # общее количество строк в логе
@@ -138,21 +138,8 @@ def calculate_report(path_to_log_file, size=1000, error_threshold_perc=51):
                 request_time = float(request_time.strip())
                 own_sum_request_time += request_time
 
-                if path in table:
-                    table[path]['count'] += 1
-                    table[path]['time_sum'] += request_time
-                    table[path]['time_avg'].append(request_time)
-                    table[path]['time_max'] = request_time if request_time > table[path]['time_max'] else table[path][
-                        'time_max']
-                else:
-                    table[path] = {'url': path,
-                                   'count': 1,
-                                   'count_perc': 0,
-                                   'time_avg': [request_time],
-                                   'time_max': request_time,
-                                   'time_med': [request_time],
-                                   'time_perc': 0,
-                                   'time_sum': request_time}
+                table[path].append(request_time)
+
             else:
                 error_rows += 1
     error_parse_perc = error_rows * 100 / own_num_rows if own_num_rows > 0 else 0
@@ -162,20 +149,34 @@ def calculate_report(path_to_log_file, size=1000, error_threshold_perc=51):
         logging.error(message)
         sys.exit(message)
 
-    table = list(table.values())
-    table.sort(key=lambda el: el['time_sum'], reverse=True)
-    table = table[0:size]
+    return {'table': table, 'own_num_request': own_num_request, 'own_sum_request_time': own_sum_request_time}
+
+
+def calculate_metrics(table_collection: dict, size=1000):
+
+    table_list = list()
+    table = table_collection['table']
 
     round_prec = 3
-    for row in table:
-        len_time_list = len(row['time_avg'])
-        row['time_med'] = running_median_insort(row['time_avg'], window_size=len_time_list)[-1]
-        row['time_avg'] = round(sum(row['time_avg']) / len(row['time_avg']), round_prec)
-        row['count_perc'] = round(row['count'] * 100 / own_num_request, round_prec)
-        row['time_perc'] = round(row['time_sum'] * 100 / own_sum_request_time, round_prec)
-        row['time_max'] = round(row['time_max'], round_prec)
-        row['time_sum'] = round(row['time_sum'], round_prec)
-    return table
+    for path, value_list in table.items():
+        ct = len(value_list)
+        time_sum = round(sum(value_list), round_prec)
+        time_avg = round(sum(value_list) / ct, round_prec)
+        count_perc = round(ct * 100 / table_collection['own_num_request'], round_prec)
+        time_perc = round(time_sum * 100 / table_collection['own_sum_request_time'], round_prec)
+        time_max = round(max(value_list), round_prec)
+        table_list.append({'url': path,
+                           'count': ct,
+                           'time_sum': time_sum,
+                           'time_avg': time_avg,
+                           'count_perc': count_perc,
+                           'time_perc': time_perc,
+                           'time_max': time_max,
+                           'time_med': running_median_insort(value_list, window_size=ct)[-1]})
+
+    table_list.sort(key=lambda el: el['time_sum'], reverse=True)
+    table_list = table_list[0:size]
+    return table_list
 
 
 def create_parser():
@@ -209,7 +210,8 @@ def main(config: dict, args):
             sys.exit(message)
 
         # counting values for report
-        table = calculate_report(log_file, size=merged_config['REPORT_SIZE'])
+        table_dict = parse_report(log_file)
+        table = calculate_metrics(table_dict, size=merged_config['REPORT_SIZE'])
 
         # rendering html template
         render(json.dumps(table), report_name, path_to_report_dir)

@@ -66,17 +66,12 @@ def get_last_log_file(path_to_log_dir):
     :param path_to_log_dir:
     :return:
     """
-    files_dict = {}
     if not os.path.exists(path_to_log_dir):
         error_message = f"Directory with logs does not exist: {path_to_log_dir}"
         logging.error(error_message)
         sys.exit(error_message)
-    for file_name in os.listdir(path_to_log_dir):
-        files_dict[extract_date_frome_file_name(file_name)] = os.path.join(path_to_log_dir, file_name)
-    date_list = list(files_dict.keys())
-    date_list.sort()
-
-    return files_dict[date_list[-1]]
+    fresh_file_name = sorted(os.listdir(path_to_log_dir), key=lambda name: extract_date_frome_file_name(name), reverse=True)[0]
+    return os.path.join(path_to_log_dir, fresh_file_name)
 
 
 def render(table_json: str, report_name: str, report_dir: str, path_to_template="./templates/report.html"):

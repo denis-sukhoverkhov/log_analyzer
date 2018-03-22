@@ -183,6 +183,12 @@ def calculate_report(path_to_log_file, size=1000, error_threshold_perc=51):
     return table
 
 
+def create_parser():
+    parser = argparse.ArgumentParser(description='Log analyzer')
+    parser.add_argument('--config', type=str, default='config.json', help='path to configuration file')
+    return parser
+
+
 def main(config: dict, args):
     try:
         loaded_config = load_config(args.config)
@@ -220,8 +226,6 @@ def main(config: dict, args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Log analyzer')
-    parser.add_argument('--config', type=str, default='config.json', help='path to configuration file')
+    parser = create_parser()
     args = parser.parse_args()
-
     main(config, args)

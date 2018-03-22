@@ -7,7 +7,7 @@ import unittest
 
 import os
 from log_analyzer import load_config, get_last_log_file, render, calculate_report, openfile, \
-    extract_date_frome_file_name
+    extract_date_frome_file_name, create_parser
 
 logging.disable(logging.CRITICAL)
 
@@ -248,6 +248,20 @@ class TestLogAnalyzer(unittest.TestCase):
 
         with openfile(path_to_file, 'rb') as out_f:
             self.assertIsInstance(out_f.readline(), bytes)
+
+    def test_parse_argument_send_config(self):
+        parser = create_parser()
+        conf_name = 'config1.json'
+
+        parsed = parser.parse_args(['--config', conf_name])
+        self.assertEqual(parsed.config, conf_name)
+
+    def test_parse_argument_config_default(self):
+        parser = create_parser()
+        conf_name = 'config.json'
+
+        parsed = parser.parse_args()
+        self.assertEqual(parsed.config, conf_name)
 
 
 if __name__ == '__main__':
